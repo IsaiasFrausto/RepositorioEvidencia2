@@ -1,140 +1,70 @@
-import socket
-import cv2
+from agents import CameraAgent, AuctioneerAgent, DroneAgent, GuardAgent, system_state
+import agentpy as ap
 import time
-from agents import VigilanciaModel
+import os
 
-class CamaraCliente:
-    def __init__(self, video_path, server_host='127.0.0.1', server_port=5000):
-        self.video_path = video_path
-        self.server_host = server_host
-        self.server_port = server_port
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+class SecurityModel(ap.Model):
+    """ Modelo de simulación del sistema de seguridad """
 
-    def conectar(self):
-        self.client_socket.connect((self.server_host, self.server_port))
-        
-    def enviar_frame(self, frame):
-        """ Codifica y envía un frame al servidor y recibe la respuesta """
-        _, encoded_image = cv2.imencode('.jpg', frame)
-        image_data = encoded_image.tobytes()
+    def setup(self):
+        """ Configuración inicial del modelo """
+        self.system_running = True
+        self.server_host = '127.0.0.1'
+        self.server_port = 5000
 
-        # Codificar el tamaño como una cadena y enviar
-        data_len = f"{len(image_data):07}".encode('utf-8')  # 7 dígitos, rellenados con ceros
-        self.client_socket.sendall(data_len)
-        self.client_socket.sendall(image_data)
+        # Rutas relativas a los videos
+        base_video_path = os.path.join(os.path.dirname(__file__), 'videos')
+        self.video_paths = [os.path.join(base_video_path, 'carros.mp4'), os.path.join(base_video_path, 'carros.mp4')]
 
-        # Recibir respuesta del servidor
-        respuesta = self.client_socket.recv(1024).decode('utf-8')
-        return respuesta
+        self.cameras = [CameraAgent(self, agent_id=i, server_host=self.server_host,
+                                    server_port=self.server_port, video_path=self.video_paths[i])
+                        for i in range(len(self.video_paths))]
+        self.auctioneer = AuctioneerAgent(self)
+        self.drone = DroneAgent(self, server_host=self.server_host,
+                                server_port=self.server_port, video_path=os.path.join(base_video_path, 'carros.mp4'))
+        self.guard = GuardAgent(self)
 
-    def procesar_video(self):
-        """ Procesa un video cuadro por cuadro """
-        cap = cv2.VideoCapture(self.video_path)
-        amenaza_detectada = False
+    def run_simulation(self):
+        """ Manejo principal del modelo """
+        # Iniciar agentes
+        for camera in self.cameras:
+            camera.start()
+        self.auctioneer.start()
+        self.drone.start()
+        self.guard.start()
 
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
+        try:
+            while True:
+                if system_state["status"] == "alert_resolved":
+                    print("Sistema: Alerta resuelta. Listo para una nueva subasta.")
+                    system_state["status"] = "idle"
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("\nDeteniendo el sistema...")
+            self.stop_agents()
 
-            # Enviar el frame al servidor para análisis
-            respuesta = self.enviar_frame(frame)
-            print(f"Servidor respondió: {respuesta}")
+        self.wait_agents()
 
-            if "Amenaza detectada" in respuesta:
-                amenaza_detectada = True
-                print("Cámara: Amenaza detectada. Alertando al Dron.")
-                break
+    def stop_agents(self):
+        """ Detiene todos los agentes """
+        self.system_running = False  # Detener el sistema
+        for camera in self.cameras:
+            camera.running = False
+        self.auctioneer.running = False
+        self.drone.running = False
+        self.guard.running = False
 
-        cap.release()
-        return amenaza_detectada
-
-class DronCliente:
-    def __init__(self, video_path, server_host='127.0.0.1', server_port=5000):
-        self.video_path = video_path
-        self.server_host = server_host
-        self.server_port = server_port
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    def conectar(self):
-        self.client_socket.connect((self.server_host, self.server_port))
-
-    def enviar_frame(self, frame):
-        """ Codifica y envía un frame al servidor y recibe la respuesta """
-        _, encoded_image = cv2.imencode('.jpg', frame)
-        image_data = encoded_image.tobytes()
-
-        # Codificar el tamaño como una cadena y enviar
-        data_len = f"{len(image_data):07}".encode('utf-8')  # 7 dígitos, rellenados con ceros
-        self.client_socket.sendall(data_len)
-        self.client_socket.sendall(image_data)
-
-        # Recibir respuesta del servidor
-        respuesta = self.client_socket.recv(1024).decode('utf-8')
-        return respuesta
+    def wait_agents(self):
+        """ Espera a que todos los hilos terminen """
+        for camera in self.cameras:
+            camera.join()
+        self.auctioneer.join()
+        self.drone.join()
+        self.guard.join()
 
 
-    def patrullar(self):
-        """ Simula un patrullaje de 20 segundos analizando un video """
-        cap = cv2.VideoCapture(self.video_path)
-        amenaza_detectada = False
-        start_time = time.time()
-
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-
-            # Enviar el frame al servidor para análisis
-            respuesta = self.enviar_frame(frame)
-            print(f"Dron recibió respuesta del servidor: {respuesta}")
-
-            if "Amenaza detectada" in respuesta:
-                amenaza_detectada = True
-                print("Dron: Amenaza detectada. Alertando al Guardia.")
-                break
-
-            # Termina si pasan 20 segundos
-            if time.time() - start_time > 20:
-                print("Dron: Patrullaje completado. No se detectó amenaza.")
-                break
-
-        cap.release()
-        return amenaza_detectada
-
-class Guardia:
-    def validar_alerta(self, alerta_dron):
-        """ Valida manualmente si la alarma fue real o falsa """
-        print(f"Guardia: Validando alerta del Dron: {alerta_dron}")
-        decision = input("¿La alarma es real? (Y/n): ").strip().lower()
-        if decision == "y":
-            print("Guardia: Alarma confirmada como REAL.")
-        else:
-            print("Guardia: Alarma marcada como FALSA.")
-
-# Simulación del sistema
 if __name__ == "__main__":
-    # Modelo de vigilancia (simula los agentes)
-    model = VigilanciaModel()
+    parameters = {'steps': 100}
+    model = SecurityModel(parameters)
     model.setup()
-
-    # Cámara procesando un video inicial"C:\\Users\\luisd\\Downloads\\Isaias - Vision\\AgentesPython\\videos\\carretera.mp4"
-    camara = CamaraCliente(video_path="C:\\Users\\luisd\\Downloads\\Isaias - Vision\\AgentesPython\\videos\\carros.mp4")
-    camara.conectar()
-    amenaza_detectada = camara.procesar_video()
-
-    if amenaza_detectada:
-        # Alertar al Dron
-        print("Cámara: Amenaza detectada. Pasando alerta al Dron.")
-        dron = DronCliente(video_path="C:\\Users\\luisd\\Downloads\\Isaias - Vision\\AgentesPython\\videos\\carretera.mp4")
-        dron.conectar()
-        amenaza_dron = dron.patrullar()
-
-        if amenaza_dron:
-            # Alertar al Guardia
-            guardia = Guardia()
-            guardia.validar_alerta(alerta_dron="Amenaza detectada por el Dron.")
-        else:
-            print("Dron: Patrullaje completado. Alerta inicial marcada como FALSA ALARMA.")
-    else:
-        print("Cámara: No se detectaron amenazas en el video inicial.")
+    model.run_simulation()

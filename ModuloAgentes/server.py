@@ -25,10 +25,11 @@ def procesar_frame(buffer):
     for box in detecciones:
         class_id = int(box.cls[0])  # Obtener ID de la clase
         class_name = model.names[class_id]  # Obtener nombre de la clase
+        confidence = box.conf[0]  # Obtener confianza del resultado
         if class_name in CLASSES_DE_AMENAZA:
-            return f"Amenaza detectada: {class_name}"
+            return f"Amenaza detectada: {class_name}, Confianza: {confidence:.2f}"
     
-    return "Área despejada"
+    return "Área despejada, Confianza: 1.00"
 
 def handle_client(client_socket, addr):
     """ Manejar la conexión con un cliente. """
