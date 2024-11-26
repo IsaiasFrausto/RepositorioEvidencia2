@@ -73,7 +73,7 @@ def handle_client(client_socket, addr):
     client_socket.close()
     logger.info(f"Cliente desconectado: {addr}")
 
-def socket_server():
+def socket_server(exit_event):
     """ Manejo del servidor principal. """
     logger = logging.getLogger("socket_server")
 
@@ -81,41 +81,58 @@ def socket_server():
     PORT = 5000
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Permitir reutilizar el puerto
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind((HOST, PORT))
     server_socket.listen(5)
+    server_socket.settimeout(1)  # Timeout para evitar bloqueos indefinidos
 
     logger.info(f"Servidor escuchando en {HOST}:{PORT}")
-    exit_socket_server_flag = ThreadEvent()
+    threads = []
 
-    def handle_exit():
-        """ Manejar salida del servidor. """
-        while True:
-            if input("Presiona 'q' para cerrar el servidor: \n").strip().lower() == 'q':
-                exit_socket_server_flag.set()
-                break
-
-    # Crear un hilo para manejar la salida del servidor
-    exit_thread = Thread(target=handle_exit)
-    exit_thread.start()
-
-    # Manejar conexiones en el servidor
     try:
-        while not exit_socket_server_flag.is_set():
+        while not exit_event.is_set():
             try:
                 client_socket, addr = server_socket.accept()
-                Thread(target=handle_client, args=(client_socket, addr)).start()
+                thread = Thread(target=handle_client, args=(client_socket, addr))
+                threads.append(thread)
+                thread.start()
             except socket.timeout:
                 continue
     except KeyboardInterrupt:
         logger.info("Interrupción manual detectada. Cerrando el servidor...")
-        exit_socket_server_flag.set()
+        exit_event.set()
 
+    # Cerrar el socket del servidor
     logger.info("Cerrando servidor...")
     server_socket.close()
-    exit_thread.join()
+
+    # Esperar a que todos los hilos terminen
+    for thread in threads:
+        thread.join()
+
     logger.info("Servidor completamente cerrado.")
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    socket_server()
+
+    exit_event = ThreadEvent()
+
+    # Iniciar el servidor en un hilo separado
+    server_thread = Thread(target=socket_server, args=(exit_event,))
+    server_thread.start()
+
+    try:
+        while True:
+            # Esperar la entrada del usuario para cerrar el servidor
+            if input("Presiona 'q' para cerrar el servidor:\n").strip().lower() == 'q':
+                exit_event.set()
+                break
+    except KeyboardInterrupt:
+        exit_event.set()
+
+    # Esperar a que el servidor termine
+    server_thread.join()
+
+    # Destruir ventanas de OpenCV
+    cv2.destroyAllWindows()
+    logging.info("Aplicación cerrada correctamente.")
