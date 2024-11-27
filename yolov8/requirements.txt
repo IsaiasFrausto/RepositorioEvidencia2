@@ -1,0 +1,5 @@
+opencv-python==4.9.0.80   # OpenCV para procesamiento de video e imágenes
+numpy==1.24.4             # Numpy para operaciones numéricas
+ultralytics==8.2.15       # YOLOv8 y su ecosistema
+Flask==2.3.2              # Servidor para comunicación entre Unity y Python
+
