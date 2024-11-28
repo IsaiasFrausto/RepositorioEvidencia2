@@ -1,12 +1,10 @@
 # Archivo de YOLO
 *.pt
-
 # Sección de Unity
 # Define macros (only works in top-level gitattributes files)
 [attr]lfs               filter=lfs diff=lfs merge=lfs -text
 [attr]unity-json        eol=lf linguist-language=json
 [attr]unity-yaml        merge=unityyamlmerge eol=lf linguist-language=yaml
-
 # Unity source files
 *.cginc                 text
 *.compute               text linguist-language=hlsl
@@ -14,7 +12,6 @@
 *.hlsl                  text linguist-language=hlsl
 *.raytrace              text linguist-language=hlsl
 *.shader                text
-
 # Unity JSON files
 *.asmdef                unity-json
 *.asmref                unity-json
@@ -22,12 +19,10 @@
 *.inputactions          unity-json
 *.shadergraph           unity-json
 *.shadersubgraph        unity-json
-
 # Unity UI Toolkit files
 *.tss                   text diff=css linguist-language=css
 *.uss                   text diff=css linguist-language=css
 *.uxml                  text linguist-language=xml linguist-detectable
-
 # Unity YAML
 *.anim                  unity-yaml
 *.asset                 unity-yaml
@@ -54,7 +49,6 @@
 *.spriteatlasv2         unity-yaml
 *.terrainlayer          unity-yaml
 *.unity                 unity-yaml
-
 # 3D models
 *.3dm                   lfs
 *.3ds                   lfs
@@ -64,19 +58,22 @@
 *.fbx                   lfs
 *.obj                   lfs
 *.stl                   lfs
-
 # Audio
 *.mp3                   lfs
 *.ogg                   lfs
 *.wav                   lfs
-
 # Images
 *.png                   lfs
 *.jpg                   lfs
-
 # Compressed Archive
 *.zip                   lfs
 *.rar                   lfs
-
 # Exceptions for .asset files such as lightning pre-baking
 LightingData.asset      binary
+*.dylib filter=lfs diff=lfs merge=lfs -text
+*.resS filter=lfs diff=lfs merge=lfs -text
+*.so filter=lfs diff=lfs merge=lfs -text
+1e76e4f574068cb08b0734657a81a7f74f83fe06a43e4b0521ae2058bf7af455 filter=lfs diff=lfs merge=lfs -text
+*dsymutil filter=lfs diff=lfs merge=lfs -text
+ArtifactDB filter=lfs diff=lfs merge=lfs -text
+dsymutil filter=lfs diff=lfs merge=lfs -text
