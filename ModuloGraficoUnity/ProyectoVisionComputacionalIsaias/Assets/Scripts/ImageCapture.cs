@@ -119,13 +119,13 @@ public class ImageCapture : MonoBehaviour
 
         // Normalizar las coordenadas y tamaños según el tamaño del Canvas
         float normalizedX = detection.x / 416f * canvasRect.rect.width;
-        float normalizedY = detection.y / 416f * canvasRect.rect.height;
+        float normalizedY = (416f - detection.y - detection.height) / 416f * canvasRect.rect.height; // Ajustar el eje Y
         float normalizedWidth = detection.width / 416f * canvasRect.rect.width;
         float normalizedHeight = detection.height / 416f * canvasRect.rect.height;
 
         // Configurar posición y tamaño
         RectTransform rect = box.GetComponent<RectTransform>();
-        rect.anchoredPosition = new Vector2(normalizedX + normalizedWidth / 2, -normalizedY - normalizedHeight / 2);
+        rect.anchoredPosition = new Vector2(normalizedX + normalizedWidth / 2, normalizedY - normalizedHeight / 2);
         rect.sizeDelta = new Vector2(normalizedWidth, normalizedHeight);
 
         // Configurar etiqueta con TextMeshProUGUI
@@ -149,8 +149,7 @@ public class ImageCapture : MonoBehaviour
         public float confidence;
         public float x, y, width, height;
     }
-}
-*/
+}*/
 
 using UnityEngine;
 using UnityEngine.Networking;
@@ -279,6 +278,8 @@ public class ImageCapture : MonoBehaviour
 
         // Configurar posición y tamaño
         RectTransform rect = box.GetComponent<RectTransform>();
+        rect.localRotation = Quaternion.identity; // Corregir rotación
+        rect.localScale = Vector3.one;           // Asegurar escala
         rect.anchoredPosition = new Vector2(normalizedX + normalizedWidth / 2, normalizedY - normalizedHeight / 2);
         rect.sizeDelta = new Vector2(normalizedWidth, normalizedHeight);
 
@@ -304,3 +305,4 @@ public class ImageCapture : MonoBehaviour
         public float x, y, width, height;
     }
 }
+
