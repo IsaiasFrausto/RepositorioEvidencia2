@@ -1,7 +1,7 @@
 <h1> A quick guide for this repository </h1>
 
 <h3>What is this reporitory about?</h3>
-
+The creation of a simulation including multiple agents, for monitoring an area and the detection of strange events.
 
 <h3>For it to work properly</h3>
 First, it is highly recommended to create a virtual environment to prevent any future confusion in the computer. 
