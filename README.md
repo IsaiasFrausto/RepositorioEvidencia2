@@ -51,7 +51,7 @@ And these libraries previoulsy installed:
 As an initial step, it is essential to run the server.py, via <code>python server.py</code> (note that we need to be on the same folder), or we could just hit the run button on the IDE of our election.
 For the Unity simulation we have to possibilities:
 <ul>
-  <il>1. To run it from Unity, with the play button</il>
+  <il>1. To run it from Unity, with the play button<br></il>
   <il>2. To execute the app, called <code>UnityAgentesVisionComputacional.exe</code>, in the folder 'JuegoCompilado'</il>
 </ul>
 
